@@ -1,0 +1,968 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+	<meta charset="UTF-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+	<title>Speedrun POV S12 WR</title>
+	<link rel="stylesheet" href="styles.css" />
+</head>
+
+<body>
+  <main class="app">
+	<canvas class="hero-canvas" id="heroCanvas" aria-hidden="true"></canvas>
+
+	<section class="shell">
+		<header class="hero hero--global-ui">
+			<div class="hero__overlay"></div>
+
+			<div class="hero__content">
+				<div class="hero__copy">
+					<h1 class="hero__title">
+						<span class="hero__title-line">Speedrun</span>
+						<span class="hero__title-line hero__title-line--accent">Players 8 POV</span>
+					</h1>
+
+					<p class="hero__lede">
+						Current
+						<a target="_blank" href="https://www.speedrun.com/d2lodce/runs/ydlw5dwz">WR 1h 37m 56s</a>
+						via
+						<a target="_blank" href="https://www.speedrun.com">www.speedrun.com</a>
+					</p>
+				</div>
+
+				<div class="hero__meta">
+					<div class="meta-chip">
+						<span class="meta-chip__label">Run</span>
+						<span class="meta-chip__value" id="runBadge">World Record Analysis</span>
+					</div>
+
+					<div class="meta-chip">
+						<span class="meta-chip__label">Mode</span>
+						<span class="meta-chip__value" id="statusText">Loading…</span>
+					</div>
+				</div>
+			</div>
+		</header>
+
+		<section class="control-deck control-deck--compact" aria-label="Playback controls">
+			<div class="control-top">
+				<div class="transport" role="group" aria-label="Transport controls">
+					<button class="icon-btn icon-btn--primary" id="togglePlay" type="button" aria-label="Play all videos">
+						<span class="material-symbols-rounded" id="togglePlayIcon">play_arrow</span>
+					</button>
+
+					<button class="icon-btn" id="restartAll" type="button" aria-label="Restart all videos">
+						<span class="material-symbols-rounded">replay</span>
+					</button>
+
+					<button class="icon-btn" id="rewindAll" type="button" aria-label="Rewind all videos by 10 seconds">
+						<span class="material-symbols-rounded">replay_10</span>
+					</button>
+
+					<button class="icon-btn" id="prevMilestone" type="button" aria-label="Previous milestone">
+						<span class="material-symbols-rounded">keyboard_double_arrow_left</span>
+					</button>
+
+					<button class="icon-btn" id="nextMilestone" type="button" aria-label="Next milestone">
+						<span class="material-symbols-rounded">keyboard_double_arrow_right</span>
+					</button>
+
+					<button class="icon-btn" id="forwardAll" type="button" aria-label="Forward all videos by 10 seconds">
+						<span class="material-symbols-rounded">forward_10</span>
+					</button>
+
+					<button class="icon-btn" id="muteToggle" type="button" aria-label="Mute audible player">
+						<span class="material-symbols-rounded" id="muteToggleIcon">volume_up</span>
+					</button>
+				</div>
+
+				<div class="deck-meta deck-meta--top">
+					<label class="audio-picker" for="audioFocus">
+						<span>Audible POV</span>
+						<select id="audioFocus" aria-label="Choose which player is audible"></select>
+					</label>
+				</div>
+			</div>
+
+			<div class="timeline-panel timeline-panel--compact">
+				<div class="time-readout time-readout--start" id="currentTime">0:00</div>
+
+				<div class="timeline-wrap">
+					<div class="timeline-marks" id="timelineMarks" aria-hidden="true"></div>
+					<input class="timeline" id="timeline" type="range" min="0" max="100" value="0" step="0.05" aria-label="Shared playback timeline" />
+				</div>
+
+				<div class="time-readout time-readout--end" id="duration">0:00</div>
+			</div>
+		</section>
+
+		<section class="video-grid" id="videoGrid" aria-label="Synchronized player grid"></section>
+
+		<footer class="footer-note">
+			<span><kbd>Space</kbd> play/pause</span>
+			<span><kbd>M</kbd> mute</span>
+			<span><kbd>←</kbd> rewind 10s</span>
+			<span><kbd>→</kbd> forward 10s</span>
+			<span><kbd>R</kbd> restart</span>
+			<span><kbd>[</kbd>/<kbd>]</kbd> milestone jump</span>
+		</footer>
+	</section>
+</main>
+
+<script src="https://www.youtube.com/iframe_api"></script>
+<script>
+    (() => {
+  	const CONFIG = {
+  		title: "PD2 Real WR • 8 POV Sync Viewer",
+  		subtitle: "World Record Analysis",
+  		seekStep: 10,
+  		uiTickMs: 120,
+  		players: [
+  			{
+  				id: "player1",
+  				role: "Tele Sorc",
+  				name: "Jymnasium",
+  				videoId: "rRy3PUgI-_U",
+  				start: 20,
+  				quality: "hd1080"
+  			},
+  			{
+  				id: "player2",
+  				role: "Assassin",
+  				name: "cougars002",
+  				videoId: "DKHJFjVfHBI",
+  				start: 9,
+  				quality: "hd720"
+  			},
+  			{
+  				id: "player3",
+  				role: "Assassin",
+  				name: "MrHollyWoot",
+  				videoId: "KrJuFZHzdm0",
+  				start: 254,
+  				quality: "hd1080"
+  			},
+  			{
+  				id: "player4",
+  				role: "Barbarian",
+  				name: "Pxned",
+  				videoId: "CyTvcfHWZYo",
+  				start: 37,
+  				quality: "hd720"
+  			},
+  			{
+  				id: "player5",
+  				role: "Paladin",
+  				name: "goatunnheim",
+  				videoId: "44shNik1jx8",
+  				start: 42,
+  				quality: "hd1080"
+  			},
+  			{
+  				id: "player6",
+  				role: "Sorceress",
+  				name: "Mekalb",
+  				videoId: "3VkPhjlk7RY",
+  				start: 17,
+  				quality: "hd1080"
+  			},
+  			{
+  				id: "player7",
+  				role: "Assassin",
+  				name: "WeMakeDonuts",
+  				videoId: "KwEWF7CuZbc",
+  				start: 17,
+  				quality: "hd720"
+  			},
+  			{
+  				id: "player8",
+  				role: "Necro",
+  				name: "Akumas",
+  				videoId: "YOfPyladb00",
+  				start: 17,
+  				quality: "hd1080"
+  			}
+  		],
+  		milestones: [
+  			{ time: 829, label: "Normal Andariel" },
+  			{ time: 1480, label: "Normal Duriel" },
+  			{ time: 1992, label: "Normal Mephisto" },
+  			{ time: 2214, label: "Normal Diablo" },
+  			{ time: 2576, label: "Normal Baal" },
+  			{ time: 3062, label: "NM Andariel" },
+  			{ time: 3368, label: "NM Duriel" },
+  			{ time: 3694, label: "NM Mephisto" },
+  			{ time: 3879, label: "NM Diablo" },
+  			{ time: 4283, label: "NM Baal" },
+  			{ time: 4566, label: "Hell Andariel" },
+  			{ time: 4869, label: "Hell Duriel" },
+  			{ time: 5237, label: "Hell Mephisto" },
+  			{ time: 5547, label: "Hell Diablo" },
+  			{ time: 5876, label: "Hell Baal" }
+  		]
+  	};
+  
+  	const state = {
+  		players: [],
+  		readyCount: 0,
+  		uiTimer: null,
+  		isScrubbing: false,
+  		audiblePlayerId: null,
+  		isMuted: false
+  	};
+  
+  	const els = {
+  		runBadge: document.getElementById("runBadge"),
+  		videoGrid: document.getElementById("videoGrid"),
+  		togglePlay: document.getElementById("togglePlay"),
+  		togglePlayIcon: document.getElementById("togglePlayIcon"),
+  		muteToggle: document.getElementById("muteToggle"),
+  		muteToggleIcon: document.getElementById("muteToggleIcon"),
+  		restartAll: document.getElementById("restartAll"),
+  		rewindAll: document.getElementById("rewindAll"),
+  		forwardAll: document.getElementById("forwardAll"),
+  		prevMilestone: document.getElementById("prevMilestone"),
+  		nextMilestone: document.getElementById("nextMilestone"),
+  		timeline: document.getElementById("timeline"),
+  		timelineMarks: document.getElementById("timelineMarks"),
+  		currentTime: document.getElementById("currentTime"),
+  		duration: document.getElementById("duration"),
+  		statusText: document.getElementById("statusText"),
+  		audioFocus: document.getElementById("audioFocus"),
+  		heroCanvas: document.getElementById("heroCanvas")
+  	};
+  
+  	function formatTime(seconds) {
+  		const total = Math.max(0, Math.floor(Number(seconds) || 0));
+  		const hours = Math.floor(total / 3600);
+  		const minutes = Math.floor((total % 3600) / 60);
+  		const secs = total % 60;
+  
+  		if (hours > 0) {
+  			return `${hours}:${String(minutes).padStart(2, "0")}:${String(secs).padStart(
+  				2,
+  				"0"
+  			)}`;
+  		}
+  
+  		return `${minutes}:${String(secs).padStart(2, "0")}`;
+  	}
+  
+  	function clamp(value, min, max) {
+  		return Math.min(Math.max(value, min), max);
+  	}
+  
+  	function setStatus(text) {
+  		if (els.statusText) {
+  			els.statusText.textContent = text;
+  		}
+  	}
+  
+  	function getMaster() {
+  		return state.players[0] ?? null;
+  	}
+  
+  	function getPlayerState(player) {
+  		try {
+  			return player?.getPlayerState?.();
+  		} catch {
+  			return -1;
+  		}
+  	}
+  
+  	function isAnyPlaying() {
+  		return state.players.some(
+  			({ instance }) => getPlayerState(instance) === YT.PlayerState.PLAYING
+  		);
+  	}
+  
+  	function getRelativeCurrent(playerObj) {
+  		if (!playerObj?.instance?.getCurrentTime) return 0;
+  		return Math.max(0, playerObj.instance.getCurrentTime() - playerObj.start);
+  	}
+  
+  	function getRelativeDuration(playerObj) {
+  		if (!playerObj?.instance?.getDuration) return 0;
+  		return Math.max(0, playerObj.instance.getDuration() - playerObj.start);
+  	}
+  
+  	function getCurrentRelativeTime() {
+  		const master = getMaster();
+  		return master ? getRelativeCurrent(master) : 0;
+  	}
+  
+  	function getMaxDuration() {
+  		const master = getMaster();
+  		return master ? getRelativeDuration(master) : 0;
+  	}
+  
+  	function runAll(callback) {
+  		state.players.forEach((playerObj) => {
+  			if (playerObj.instance && playerObj.ready) {
+  				callback(playerObj);
+  			}
+  		});
+  	}
+  
+  	function syncTimelineVisual(value, max) {
+  		const safeMax = Math.max(1, Number(max) || 1);
+  		const progress = (Number(value) / safeMax) * 100;
+  		els.timeline?.style.setProperty("--progress", `${progress}%`);
+  	}
+  
+  	function updatePlayButton() {
+  		if (!els.togglePlay || !els.togglePlayIcon) return;
+  
+  		const playing = isAnyPlaying();
+  		els.togglePlayIcon.textContent = playing ? "pause" : "play_arrow";
+  		els.togglePlay.setAttribute(
+  			"aria-label",
+  			playing ? "Pause all videos" : "Play all videos"
+  		);
+  	}
+  
+  	function updateMuteButton() {
+  		if (!els.muteToggle || !els.muteToggleIcon) return;
+  
+  		els.muteToggleIcon.textContent = state.isMuted ? "volume_off" : "volume_up";
+  		els.muteToggle.setAttribute(
+  			"aria-label",
+  			state.isMuted ? "Unmute audible player" : "Mute audible player"
+  		);
+  		els.muteToggle.classList.toggle("icon-btn--primary", state.isMuted);
+  	}
+  
+  	function updatePlayerIndicators() {
+  		state.players.forEach((playerObj) => {
+  			const readyIcon = document.querySelector(
+  				`[data-icon-ready="${playerObj.id}"]`
+  			);
+  			const audioIcon = document.querySelector(
+  				`[data-icon-audio="${playerObj.id}"]`
+  			);
+  
+  			if (readyIcon) {
+  				readyIcon.classList.toggle("status-icon--ready", playerObj.ready);
+  				readyIcon.title = playerObj.ready ? "Ready" : "Loading";
+  				readyIcon.setAttribute("aria-label", playerObj.ready ? "Ready" : "Loading");
+  				readyIcon.innerHTML = `<span class="material-symbols-rounded">${
+  					playerObj.ready ? "check_circle" : "hourglass_top"
+  				}</span>`;
+  			}
+  
+  			if (audioIcon) {
+  				const isAudible = state.audiblePlayerId === playerObj.id;
+  				const iconName = isAudible
+  					? state.isMuted
+  						? "volume_off"
+  						: "volume_up"
+  					: "volume_off";
+  
+  				audioIcon.classList.toggle(
+  					"status-icon--audible",
+  					isAudible && !state.isMuted
+  				);
+  				audioIcon.classList.toggle(
+  					"status-icon--muted",
+  					!isAudible || state.isMuted
+  				);
+  				audioIcon.title = isAudible
+  					? state.isMuted
+  						? "Muted"
+  						: "Audio on"
+  					: "Muted";
+  				audioIcon.setAttribute(
+  					"aria-label",
+  					isAudible ? (state.isMuted ? "Muted" : "Audio on") : "Muted"
+  				);
+  				audioIcon.innerHTML = `<span class="material-symbols-rounded">${iconName}</span>`;
+  			}
+  		});
+  	}
+  
+  	function applyAudioState() {
+  		runAll(({ id, instance }) => {
+  			try {
+  				const shouldBeAudible = id === state.audiblePlayerId && !state.isMuted;
+  
+  				if (shouldBeAudible) {
+  					instance.unMute();
+  					instance.setVolume(100);
+  				} else {
+  					instance.mute();
+  				}
+  			} catch (error) {
+  				console.warn("Audio state update failed:", error);
+  			}
+  		});
+  
+  		updateMuteButton();
+  		updatePlayerIndicators();
+  	}
+  
+  	function applyAudioFocus(targetId) {
+  		state.audiblePlayerId = targetId;
+  
+  		if (els.audioFocus) {
+  			els.audioFocus.value = targetId;
+  		}
+  
+  		applyAudioState();
+  
+  		const player = CONFIG.players.find((p) => p.id === targetId);
+  		setStatus(
+  			`Audio focus: ${player?.name ?? "Unknown"}${state.isMuted ? " (muted)" : ""}`
+  		);
+  	}
+  
+  	function toggleMute() {
+  		state.isMuted = !state.isMuted;
+  		applyAudioState();
+  
+  		const player = CONFIG.players.find((p) => p.id === state.audiblePlayerId);
+  		setStatus(
+  			state.isMuted
+  				? `Muted: ${player?.name ?? "Selected player"}`
+  				: `Unmuted: ${player?.name ?? "Selected player"}`
+  		);
+  	}
+  
+  	function playAll() {
+  		runAll(({ instance }) => {
+  			try {
+  				instance.playVideo();
+  			} catch (error) {
+  				console.warn("Play failed:", error);
+  			}
+  		});
+  
+  		setStatus("Playing");
+  		updatePlayButton();
+  	}
+  
+  	function pauseAll() {
+  		runAll(({ instance }) => {
+  			try {
+  				instance.pauseVideo();
+  			} catch (error) {
+  				console.warn("Pause failed:", error);
+  			}
+  		});
+  
+  		setStatus("Paused");
+  		updatePlayButton();
+  	}
+  
+  	function restartAllVideos() {
+  		runAll(({ instance, start }) => {
+  			try {
+  				instance.seekTo(start, true);
+  				instance.playVideo();
+  			} catch (error) {
+  				console.warn("Restart failed:", error);
+  			}
+  		});
+  
+  		setStatus("Restarted");
+  		updatePlayButton();
+  	}
+  
+  	function offsetAll(seconds) {
+  		runAll(({ instance }) => {
+  			try {
+  				const current = instance.getCurrentTime();
+  				instance.seekTo(Math.max(0, current + seconds), true);
+  			} catch (error) {
+  				console.warn("Offset failed:", error);
+  			}
+  		});
+  
+  		setStatus(
+  			seconds > 0 ? `Forward ${seconds}s` : `Rewind ${Math.abs(seconds)}s`
+  		);
+  	}
+  
+  	function seekRelativeTo(relativeTime, shouldPlayAfter = false) {
+  		runAll(({ instance, start }) => {
+  			try {
+  				instance.seekTo(start + relativeTime, true);
+  
+  				if (shouldPlayAfter) {
+  					instance.playVideo();
+  				} else {
+  					instance.pauseVideo();
+  				}
+  			} catch (error) {
+  				console.warn("Seek failed:", error);
+  			}
+  		});
+  
+  		const clamped = clamp(relativeTime, 0, Number(els.timeline?.max) || 0);
+  
+  		if (els.timeline) {
+  			els.timeline.value = clamped;
+  			syncTimelineVisual(clamped, els.timeline.max);
+  		}
+  
+  		if (els.currentTime) {
+  			els.currentTime.textContent = formatTime(clamped);
+  		}
+  
+  		const matchedMilestone = getSortedMilestones().find(
+  			(milestone) => Math.abs(milestone.time - clamped) <= 1
+  		);
+  
+  		setStatus(
+  			matchedMilestone
+  				? `Seek to ${matchedMilestone.label}`
+  				: `Seek to ${formatTime(clamped)}`
+  		);
+  
+  		updatePlayButton();
+  	}
+  
+  	function getSortedMilestones() {
+  		return [...CONFIG.milestones].sort((a, b) => a.time - b.time);
+  	}
+  
+  	function getNearestMilestone(direction) {
+  		const current = getCurrentRelativeTime();
+  		const milestones = getSortedMilestones();
+  
+  		if (direction < 0) {
+  			return [...milestones]
+  				.reverse()
+  				.find((milestone) => milestone.time < current - 1);
+  		}
+  
+  		return milestones.find((milestone) => milestone.time > current + 1);
+  	}
+  
+  	function skipToMilestone(direction) {
+  		const milestone = getNearestMilestone(direction);
+  		if (!milestone) return;
+  
+  		const keepPlaying = isAnyPlaying();
+  		seekRelativeTo(milestone.time, keepPlaying);
+  		setStatus(`Jumped to ${milestone.label}`);
+  	}
+  
+  	function refreshTimeline() {
+  		const current = getCurrentRelativeTime();
+  		const duration = getMaxDuration();
+  
+  		const previousMax = Number(els.timeline?.max) || 0;
+  		const nextMax = Math.max(duration, previousMax, 1);
+  
+  		if (!state.isScrubbing && els.timeline) {
+  			els.timeline.max = nextMax;
+  			els.timeline.value = clamp(current, 0, nextMax);
+  			syncTimelineVisual(current, nextMax);
+  		}
+  
+  		if (els.currentTime && !state.isScrubbing) {
+  			els.currentTime.textContent = formatTime(current);
+  		}
+  
+  		if (previousMax !== nextMax) {
+  			renderTimelineMarks();
+  		}
+  
+  		if (els.duration) {
+  			els.duration.textContent = formatTime(duration);
+  		}
+  
+  		updatePlayButton();
+  	}
+  
+  	function renderTimelineMarks() {
+  		if (!els.timelineMarks || !els.timeline) return;
+  
+  		const max = Number(els.timeline.max) || 0;
+  		els.timelineMarks.innerHTML = "";
+  
+  		if (!max) return;
+  
+  		getSortedMilestones().forEach((milestone) => {
+  			const button = document.createElement("button");
+  			const percent = (clamp(milestone.time, 0, max) / max) * 100;
+  
+  			button.type = "button";
+  			button.className = "timeline-mark";
+  			button.style.left = `${percent}%`;
+  			button.title = `${milestone.label} • ${formatTime(milestone.time)}`;
+  			button.setAttribute(
+  				"aria-label",
+  				`${milestone.label} at ${formatTime(milestone.time)}`
+  			);
+  
+  			button.addEventListener("click", (event) => {
+  				event.preventDefault();
+  				event.stopPropagation();
+  				const keepPlaying = isAnyPlaying();
+  				seekRelativeTo(milestone.time, keepPlaying);
+  			});
+  
+  			els.timelineMarks.appendChild(button);
+  		});
+  	}
+  
+  	function renderPlayerCards() {
+  		if (!els.videoGrid) return;
+  
+  		const fragment = document.createDocumentFragment();
+  
+  		CONFIG.players.forEach((player) => {
+  			const article = document.createElement("article");
+  			article.className = `video-card ${
+  				player.id === "player7" ? "video-card--zoomed" : ""
+  			}`;
+  			article.innerHTML = `
+          <div class="video-card__top">
+            <div class="video-card__identity">
+              <p class="video-card__meta">${player.role} · ${player.name}</p>
+            </div>
+  
+            <div class="video-card__icons">
+              <span class="status-icon" data-icon-ready="${player.id}" aria-label="Loading" title="Loading">
+                <span class="material-symbols-rounded">hourglass_top</span>
+              </span>
+  
+              <span class="status-icon status-icon--muted" data-icon-audio="${player.id}" aria-label="Muted" title="Muted">
+                <span class="material-symbols-rounded">volume_off</span>
+              </span>
+            </div>
+          </div>
+  
+          <div class="player-shell">
+            <div class="player-frame" id="${player.id}"></div>
+          </div>
+        `;
+  
+  			fragment.appendChild(article);
+  		});
+  
+  		els.videoGrid.replaceChildren(fragment);
+  	}
+  
+  	function populateAudioPicker() {
+  		if (!els.audioFocus) return;
+  
+  		const fragment = document.createDocumentFragment();
+  
+  		CONFIG.players.forEach((player) => {
+  			const option = document.createElement("option");
+  			option.value = player.id;
+  			option.textContent = `${player.role} — ${player.name}`;
+  			fragment.appendChild(option);
+  		});
+  
+  		els.audioFocus.replaceChildren(fragment);
+  		els.audioFocus.value = CONFIG.players[0].id;
+  	}
+  
+  	function onPlayerReady(event) {
+  		const playerObj = state.players.find(
+  			(item) => item.instance === event.target
+  		);
+  		if (!playerObj) return;
+  
+  		playerObj.ready = true;
+  		state.readyCount += 1;
+  
+  		try {
+  			event.target.cueVideoById({
+  				videoId: playerObj.videoId,
+  				startSeconds: playerObj.start,
+  				suggestedQuality: playerObj.quality
+  			});
+  		} catch {
+  			try {
+  				event.target.pauseVideo();
+  				event.target.seekTo(playerObj.start, true);
+  			} catch (error) {
+  				console.warn("Fallback cue failed:", error);
+  			}
+  		}
+  
+  		try {
+  			event.target.mute();
+  		} catch (error) {
+  			console.warn("Initial mute failed:", error);
+  		}
+  
+  		updatePlayerIndicators();
+  		updatePlayButton();
+  
+  		if (state.readyCount === CONFIG.players.length) {
+  			applyAudioFocus(state.audiblePlayerId || CONFIG.players[0].id);
+  			refreshTimeline();
+  			renderTimelineMarks();
+  
+  			if (!state.uiTimer) {
+  				state.uiTimer = window.setInterval(refreshTimeline, CONFIG.uiTickMs);
+  			}
+  
+  			setStatus("All players loaded");
+  		}
+  	}
+  
+  	function onPlayerStateChange() {
+  		updatePlayButton();
+  	}
+  
+  	function onPlayerError(event, label) {
+  		console.error(`${label} error`, event.data);
+  		setStatus(`${label} error: ${event.data}`);
+  	}
+  
+  	function bindEvents() {
+  		els.togglePlay?.addEventListener("click", () => {
+  			if (isAnyPlaying()) {
+  				pauseAll();
+  			} else {
+  				playAll();
+  			}
+  		});
+  
+  		els.muteToggle?.addEventListener("click", toggleMute);
+  		els.restartAll?.addEventListener("click", restartAllVideos);
+  		els.rewindAll?.addEventListener("click", () => offsetAll(-CONFIG.seekStep));
+  		els.forwardAll?.addEventListener("click", () => offsetAll(CONFIG.seekStep));
+  		els.prevMilestone?.addEventListener("click", () => skipToMilestone(-1));
+  		els.nextMilestone?.addEventListener("click", () => skipToMilestone(1));
+  
+  		els.audioFocus?.addEventListener("change", () => {
+  			applyAudioFocus(els.audioFocus.value);
+  		});
+  
+  		els.timeline?.addEventListener("input", () => {
+  			state.isScrubbing = true;
+  			const value = Number(els.timeline.value) || 0;
+  			syncTimelineVisual(value, els.timeline.max);
+  
+  			if (els.currentTime) {
+  				els.currentTime.textContent = formatTime(value);
+  			}
+  		});
+  
+  		els.timeline?.addEventListener("change", () => {
+  			const target = Number(els.timeline.value) || 0;
+  			const keepPlaying = isAnyPlaying();
+  			seekRelativeTo(target, keepPlaying);
+  			state.isScrubbing = false;
+  		});
+  
+  		els.timeline?.addEventListener("pointerdown", () => {
+  			state.isScrubbing = true;
+  		});
+  
+  		els.timeline?.addEventListener("pointerup", () => {
+  			state.isScrubbing = false;
+  		});
+  
+  		document.addEventListener("keydown", (event) => {
+  			const activeTag = document.activeElement?.tagName;
+  			const isTyping =
+  				activeTag === "INPUT" ||
+  				activeTag === "TEXTAREA" ||
+  				activeTag === "SELECT" ||
+  				document.activeElement?.isContentEditable;
+  
+  			if (isTyping) return;
+  
+  			if (event.code === "Space") {
+  				event.preventDefault();
+  				isAnyPlaying() ? pauseAll() : playAll();
+  			} else if (event.key === "ArrowLeft") {
+  				event.preventDefault();
+  				offsetAll(-CONFIG.seekStep);
+  			} else if (event.key === "ArrowRight") {
+  				event.preventDefault();
+  				offsetAll(CONFIG.seekStep);
+  			} else if (event.key.toLowerCase() === "r") {
+  				event.preventDefault();
+  				restartAllVideos();
+  			} else if (event.key.toLowerCase() === "m") {
+  				event.preventDefault();
+  				toggleMute();
+  			} else if (event.key === "[") {
+  				event.preventDefault();
+  				skipToMilestone(-1);
+  			} else if (event.key === "]") {
+  				event.preventDefault();
+  				skipToMilestone(1);
+  			}
+  		});
+  	}
+  
+  	function initHeroCanvas() {
+  		const canvas = els.heroCanvas;
+  		if (!canvas) return;
+  
+  		const ctx = canvas.getContext("2d");
+  		if (!ctx) return;
+  
+  		let width = 0;
+  		let height = 0;
+  		let rafId = 0;
+  		let particles = [];
+  
+  		function resize() {
+  			const dpr = window.devicePixelRatio || 1;
+  			width = window.innerWidth;
+  			height = 320;
+  
+  			canvas.width = Math.floor(width * dpr);
+  			canvas.height = Math.floor(height * dpr);
+  			canvas.style.width = `${width}px`;
+  			canvas.style.height = `${height}px`;
+  
+  			ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  
+  			particles = Array.from(
+  				{ length: Math.min(42, Math.floor(width / 42)) },
+  				(_, i) => ({
+  					x: (i / Math.max(1, Math.min(42, Math.floor(width / 42)))) * width,
+  					y: Math.random() * height,
+  					r: 1 + Math.random() * 2.2,
+  					vx: 0.15 + Math.random() * 0.25,
+  					vy: -0.08 + Math.random() * 0.16,
+  					hue: i % 3
+  				})
+  			);
+  		}
+  
+  		function drawGrid(time) {
+  			ctx.save();
+  			ctx.strokeStyle = "rgba(255,255,255,0.035)";
+  			ctx.lineWidth = 1;
+  
+  			const offset = (time * 0.02) % 36;
+  
+  			for (let x = -36; x < width + 36; x += 36) {
+  				ctx.beginPath();
+  				ctx.moveTo(x + offset, 0);
+  				ctx.lineTo(x + offset, height);
+  				ctx.stroke();
+  			}
+  
+  			for (let y = 0; y < height; y += 36) {
+  				ctx.beginPath();
+  				ctx.moveTo(0, y);
+  				ctx.lineTo(width, y);
+  				ctx.stroke();
+  			}
+  
+  			ctx.restore();
+  		}
+  
+  		function drawSweep(time) {
+  			const sweepX = ((time * 0.18) % (width + 260)) - 130;
+  			const grad = ctx.createLinearGradient(sweepX - 80, 0, sweepX + 80, 0);
+  			grad.addColorStop(0, "rgba(124,167,255,0)");
+  			grad.addColorStop(0.5, "rgba(124,167,255,0.18)");
+  			grad.addColorStop(1, "rgba(124,167,255,0)");
+  
+  			ctx.fillStyle = grad;
+  			ctx.fillRect(0, 0, width, height);
+  		}
+  
+  		function drawParticles() {
+  			particles.forEach((p) => {
+  				p.x += p.vx;
+  				p.y += p.vy;
+  
+  				if (p.x > width + 20) p.x = -20;
+  				if (p.y < -10) p.y = height + 10;
+  				if (p.y > height + 10) p.y = -10;
+  
+  				const color =
+  					p.hue === 0
+  						? "rgba(124,167,255,0.75)"
+  						: p.hue === 1
+  						? "rgba(134,242,211,0.65)"
+  						: "rgba(182,149,255,0.65)";
+  
+  				ctx.beginPath();
+  				ctx.fillStyle = color;
+  				ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+  				ctx.fill();
+  			});
+  		}
+  
+  		function frame(time) {
+  			ctx.clearRect(0, 0, width, height);
+  			drawGrid(time);
+  			drawSweep(time);
+  			drawParticles();
+  			rafId = requestAnimationFrame(frame);
+  		}
+  
+  		resize();
+  		frame(0);
+  
+  		window.addEventListener("resize", resize);
+  
+  		window.addEventListener("beforeunload", () => {
+  			cancelAnimationFrame(rafId);
+  		});
+  	}
+  
+  	function boot() {
+  		document.title = CONFIG.title;
+  
+  		if (els.runBadge) {
+  			els.runBadge.textContent = CONFIG.subtitle;
+  		}
+  
+  		renderPlayerCards();
+  		populateAudioPicker();
+  		bindEvents();
+  		initHeroCanvas();
+  
+  		state.audiblePlayerId = CONFIG.players[0].id;
+  		syncTimelineVisual(0, 100);
+  		updateMuteButton();
+  		updatePlayerIndicators();
+  		setStatus("Initializing YouTube players…");
+  	}
+  
+  	window.onYouTubeIframeAPIReady = function onYouTubeIframeAPIReady() {
+  		state.players = CONFIG.players.map((config, index) => {
+  			const instance = new YT.Player(config.id, {
+  				width: "100%",
+  				height: "100%",
+  				videoId: config.videoId,
+  				playerVars: {
+  					autoplay: 0,
+  					controls: 0,
+  					rel: 0,
+  					modestbranding: 1,
+  					playsinline: 1,
+  					enablejsapi: 1,
+  					origin: window.location.origin,
+  					start: config.start
+  				},
+  				events: {
+  					onReady: onPlayerReady,
+  					onStateChange: onPlayerStateChange,
+  					onError: (event) => onPlayerError(event, `Player ${index + 1}`)
+  				}
+  			});
+  
+  			return {
+  				...config,
+  				instance,
+  				ready: false
+  			};
+  		});
+  	};
+  
+  	boot();
+  })();
+</script>
+</body>
+
+</html>
